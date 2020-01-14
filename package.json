@@ -1,0 +1,20 @@
+{
+  "name": "cryptochain",
+  "version": "1.0.0",
+  "description": "Blockchain with NodeJs",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --watchAll"
+  },
+  "keywords": [
+    "Cryptochain",
+    "Blockchain",
+    "NodeJs",
+    "JavaScript"
+  ],
+  "author": "Ahmad Rifa'i",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^24.9.0"
+  }
+}
