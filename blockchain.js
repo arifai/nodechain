@@ -22,11 +22,11 @@ class Blockchain {
         }
 
         if (!Blockchain.isValidChain(chain)) {
-            console.error('The incoming chain must be vallid')
+            console.error('The incoming chain must be valid')
             return;
         }
 
-        console.log('replacing chain with', chain);
+        console.log('Replacing chain with', chain);
         this.chain = chain;
     }
 
