@@ -1,21 +1,21 @@
 version: 2.1
 jobs:
   build:
-    working_directory: ~/nodechain
+    working_directory: ~/public
     docker:
-      - image: circleci/node:latest
+      - image: circleci/node:10.16.2
     steps:
       - checkout
       - run:
           name: update-npm
-          command: 'sudo npm install -g npm'
+          command: 'sudo npm install -g npm@latest'
       - restore_cache:
-          key: dependency-cache-{{ checksum "package-lock.json" }}
+          key: dependency-cache-{{ checksum "package.json" }}
       - run:
           name: install-npm-module
           command: npm install
       - save_cache:
-          key: dependency-cache-{{ checksum "package-lock.json" }}
+          key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - ./node_modules
       - run:
