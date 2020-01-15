@@ -3,9 +3,13 @@ const express = require('express');
 const request = require('request');
 const Blockchain = require('../blockchain/index');
 const PubSub = require('../app/pubsub');
+const TransactionPool = require('../wallet/transaction-pool');
+const Wallet = require('../wallet/index');
 
 const blockchain = new Blockchain();
 const app = express();
+const transactionPool = new TransactionPool();
+const wallet = new Wallet();
 const pubsub = new PubSub({ blockchain });
 
 const DEFAULT_PORT = 8080;
@@ -34,7 +38,19 @@ app.post('/api/v1/mine', (req, res) => {
     res.redirect('/api/v1/blocks');
 });
 
-const sysncChain = () => {
+app.post('/api/v1/transaction', (req, res) => {
+    const { amount, recipient } = req.body;
+
+    const transaction = wallet.createTransaction({ recipient, amount });
+
+    transactionPool.setTransaction(transaction);
+
+    console.log('transactionPool', transactionPool);
+
+    res.json({ transaction });
+});
+
+const syncChain = () => {
     request({ url: `${ROOT_NODE_ADDRESS}/api/v1/blocks` }, (error, response, body) => {
         if (!error && response.statusCode === 200) {
             const rootChain = JSON.parse(body);
@@ -49,6 +65,6 @@ app.listen(PORT, () => {
     console.log(`listening at http://localhost:${PORT}`);
 
     if (PORT !== DEFAULT_PORT) {
-        sysncChain();
+        syncChain();
     }
 });
