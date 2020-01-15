@@ -1,40 +1,75 @@
-const PubNub = require('pubnub');
-
-const credentials = {
-    publishKey: 'pub-c-1f644b0b-e844-4180-93e0-29f8843b740e',
-    subscribeKey: 'sub-c-b5897b98-3752-11ea-be28-ae0ede4a022d',
-    secretKey: 'sec-c-ZDZmODI3OGYtYzg5My00MWM0LTljODktZWQzZTcwNzUxNmIw'
-};
+const redis = require('redis');
 
 const CHANNELS = {
-    TEST: 'DUMMY-TEST'
+    TEST: 'TEST',
+    BLOCKCHAIN: 'BLOCKCHAIN',
+    TRANSACTION: 'TRANSACTION'
 };
 
 class PubSub {
-    constructor() {
-        this.pubnub = new PubNub(credentials);
+    constructor({ blockchain, transactionPool, redisUrl }) {
+        this.blockchain = blockchain;
+        this.transactionPool = transactionPool;
 
-        this.pubnub.subscribe({ channels: [Object.values(CHANNELS)] });
+        this.publisher = redis.createClient(redisUrl);
+        this.subscriber = redis.createClient(redisUrl);
 
-        this.pubnub.addListener(this.listener());
+        this.subscribeToChannels();
+
+        this.subscriber.on(
+            'message',
+            (channel, message) => this.handleMessage(channel, message)
+        );
     }
 
-    listener() {
-        return {
-            message: messageObject => {
-                const { channel, message } = messageObject;
+    handleMessage(channel, message) {
+        console.log(`Message received. Channel: ${channel}. Message: ${message}.`);
 
-                console.log(`Message received. Channel: ${channel}. Message: ${message}.`);
-            }
-        };
+        const parsedMessage = JSON.parse(message);
+
+        switch (channel) {
+            case CHANNELS.BLOCKCHAIN:
+                this.blockchain.replaceChain(parsedMessage, true, () => {
+                    this.transactionPool.clearBlockchainTransactions({
+                        chain: parsedMessage
+                    });
+                });
+                break;
+            case CHANNELS.TRANSACTION:
+                this.transactionPool.setTransaction(parsedMessage);
+                break;
+            default:
+                return;
+        }
+    }
+
+    subscribeToChannels() {
+        Object.values(CHANNELS).forEach(channel => {
+            this.subscriber.subscribe(channel);
+        });
     }
 
     publish({ channel, message }) {
-        this.pubnub.publish({ channel, message });
+        this.subscriber.unsubscribe(channel, () => {
+            this.publisher.publish(channel, message, () => {
+                this.subscriber.subscribe(channel);
+            });
+        });
+    }
+
+    broadcastChain() {
+        this.publish({
+            channel: CHANNELS.BLOCKCHAIN,
+            message: JSON.stringify(this.blockchain.chain)
+        });
+    }
+
+    broadcastTransaction(transaction) {
+        this.publish({
+            channel: CHANNELS.TRANSACTION,
+            message: JSON.stringify(transaction)
+        });
     }
 }
-
-const testPubSub = new PubSub();
-testPubSub.publish({ channel: CHANNELS.TEST, message: 'Hello world!' });
 
 module.exports = PubSub;
