@@ -41,10 +41,15 @@ app.post('/api/v1/mine', (req, res) => {
 app.post('/api/v1/transaction', (req, res) => {
     const { amount, recipient } = req.body;
 
-    let transaction;
+    let transaction = transactionPool
+        .existingTransaction({ inputAddress: wallet.publicKey });
 
     try {
-        transaction = wallet.createTransaction({ recipient, amount });
+        if (transaction) {
+            transaction.update({ senderWallet: wallet, recipient, amount });
+        } else {
+            transaction = wallet.createTransaction({ recipient, amount });
+        }
     } catch (error) {
         return res.status(400).json({
             status: 'failed',
@@ -54,9 +59,11 @@ app.post('/api/v1/transaction', (req, res) => {
 
     transactionPool.setTransaction(transaction);
 
-    console.log('transactionPool', transactionPool);
-
     res.json({ status: 'success', transaction });
+});
+
+app.get('/api/v1/transaction_pool_map', (req, res) => {
+    res.json(transactionPool.transactionMap);
 });
 
 const syncChain = () => {
