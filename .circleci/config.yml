@@ -1,17 +1,21 @@
-version: 2
+version: 2.1
 jobs:
   build:
     working_directory: ~/nodechain
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "package.json" }}
+    steps:
+      - checkout
       - run:
-          name: npm-install-module
+          name: update-npm
+          command: 'sudo npm install -g npm'
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package-lock.json" }}
+      - run:
+          name: install-npm-module
           command: npm install
       - save_cache:
+          key: dependency-cache-{{ checksum "package-lock.json" }}
           paths:
             - ./node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
       - run:
-          name: npm-test
+          name: test
           command: npm run test
