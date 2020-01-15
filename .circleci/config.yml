@@ -5,13 +5,12 @@ jobs:
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "package.json" }}
-
       - run:
           name: npm-install-module
           command: npm install
       - save_cache:
           paths:
-            - node_modules
+            - ./node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
       - run:
           name: npm-test
