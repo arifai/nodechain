@@ -8,10 +8,6 @@ stages:
 before-script:
   - npm install
 
-cache: 
-  directories:
-    -node_modules
-
 jobs: 
   include:
     - stage: test
